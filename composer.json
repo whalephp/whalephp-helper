@@ -1,0 +1,19 @@
+{
+    "name": "whalephp/whalephp-helper",
+    "description": "PHP data builder",
+    "license": "Apache-2.0",
+    "homepage": "https://github.com/whalephp/whalephp-helper",
+    "type": "library",
+    "keywords": ["whalephp-helper","whalephp"],
+    "authors": [
+        {
+            "name": "qw_xingzhe",
+            "email": "1243463730@qq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "whalephp\\": "src"
+        }
+    }
+}
