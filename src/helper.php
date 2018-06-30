@@ -23,7 +23,7 @@ if (!function_exists('helper_test')) {
 }
 
 function TBui( $type,&$obj ){
-	$builder = \whalephp\tool\TBuilder::createBuilder( $type,$obj );
+	$builder = \whalephp\tbuilder\TBuilder::createBuilder( $type,$obj );
 	
 	
 	
