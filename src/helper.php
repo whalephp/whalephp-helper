@@ -286,6 +286,7 @@ function TBuilder( $type,&$CI ){
 		$config['tpl_cache'] = false;
 		
 		
+		//vde( session('user_auth') );
 		$_view_vars = array_replace_recursive($builder->_view_vars,$CI->_view_vars);
 		return $CI	->assign_whale([
 							'_admin_base_layout' => $layout[ $admin_current_view_base_layout ],
@@ -301,10 +302,7 @@ function TBuilder( $type,&$CI ){
 
 							'crumbsArr'			=> $_view_vars['crumbsArr'],
 							'__MENU__'			=> $_view_vars['__MENU__'],
-				
-							'userinfo'			=> ['head_pic'=>'','username'=>''],
 							'_view_vars'		=> $_view_vars,
-				
 					])
 					->assign_whale($_view_vars['assign_data'])
 					->fetch_whale($template, $vars, $config);
