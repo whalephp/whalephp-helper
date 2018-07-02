@@ -13,36 +13,6 @@
 const WHALEPHP_VERSION    = '0.1';
 const WHALEPHP_ADDON_PATH = './addons/';
 
-if (!function_exists('helper_test')) {
-    /**
-	 * 测试
-	 */
-	function helper_test(){
-		echo 'helper_test...';
-	}
-}
-
-function TBui( $type,&$obj ){
-	$builder = \whalephp\tbuilder\TBuilder::createBuilder( $type,$obj );
-	
-	
-	
-	return $builder;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //+---------------------------------------------------------------------------------+//
 //+									插件及钩子相关处理								+//
@@ -54,7 +24,7 @@ function TBui( $type,&$obj ){
  * @return void
  */
 function hook($hook,$params=array()){
-	\Think\Hook::listen($hook,$params);
+	\think\facade\Hook::listen($hook,$params);
 }
 
 /**
@@ -252,12 +222,96 @@ function DBuilder( $modal_info ){
  * @date: 2017-4-29 下午12:50:43
  * @author: qw_xingzhe <qwei2013@gmail.com>
  */
-function TBuilder( $type,&$obj ){
-	$builder = app\common\builder\TBuilder::createBuilder($type,$obj);
-	if( $obj ){
-		$builder->widgetsValues = &$obj->widgetsValues;
-		//$builder->_view_vars 	= &$obj->_view_vars;
-	}
+function TBuilder( $type,&$CI ){
+
+	$builder = \whalephp\tbuilder\TBuilder::createBuilder( $type,$CI );
+	
+	$builder->fetch = function($template = '', $vars = [], $config = []) use ($CI,$builder,$type){
+		
+		
+		$builder->beforeFetch();
+		
+		$builder_path 	= \Env::get('root_path') . 'vendor/whalephp/tbuilder/src/builder/';
+		$template 		= $builder_path . $type.'/'.$builder->_view_vars['layout_view'].'.html';		// 当前构建器的布局文件
+		
+		//vde($builder->_view_vars);
+		
+		
+		
+		// 其他构建器的布局文件
+		$layout_base 	= $builder_path . 'public/';
+		$layout 		= [
+			'admin_current_view_base_layout'=> 'admin_view_base_layout',
+			'admin_view_base_layout'		=> $layout_base . 'base.html',
+			'admin_view_base_simp_layout'	=> $layout_base . 'base_simp.html',
+			'admin_view_public'				=> $layout_base,
+			'_home_base_layout'				=> $layout_base . 'common/view/home/public/base.html',
+			'_home_ucenter_base_layout'		=> $layout_base . 'common/view/home/public/base_ucenter.html',
+			'_home_simple_base_layout'		=> $layout_base . 'common/view/home/public/base_simple.html',
+			'_weui_base_layout'				=> $layout_base . 'common/view/home/public/base_weui.html',
+		];
+		
+		// 指定布局文件
+		//------------------------------------------------------------------------------
+		$CI->assign_whale('_home_layout',				config('_home_base_layout'));					// H5布局
+		$CI->assign_whale('_home_base_layout',			config('_home_base_layout'));					// H5常规布局
+		$CI->assign_whale('_home_simple_base_layout',	config('_home_simple_base_layout'));	// 简版布局
+		$CI->assign_whale('_home_ucenter_base_layout',	config('_home_ucenter_base_layout'));	// H5用户中心布局
+		$CI->assign_whale('_weui_base_layout',			config('_weui_base_layout'));					// weui布局
+		//------------------------------------------------------------------------------
+		
+		//$modal_show = $CI->request->param('modal_show',0);
+		$admin_current_view_base_layout = 'admin_view_base_layout';
+// 		if( $modal_show==1 ){
+// 			$admin_current_view_base_layout = 'admin_view_base_simp_layout';
+// 		}
+		config('admin_current_view_base_layout',$admin_current_view_base_layout);
+		
+		//$CI->assign_whale(['userInfo'=>$CI->userInfo,'modal_show'=>$modal_show,'identity_type'=>IDENTITY_TYPE]);
+		//$CI->assign_whale('modal_jump_type',$CI->request->param('modal_jump_type',0));
+		//------------------------------------------------------------------------------
+		// vde( $admin_current_view_base_layout );
+// 		vde($layout[ $admin_current_view_base_layout ]);
+		//vd($CI->_view_vars);vde($_view_vars);
+		$modal_show = request()->param('modal_show',0);
+		if( $modal_show==1 ){
+			$admin_current_view_base_layout = 'admin_view_base_simp_layout';
+		}
+// 		vd($modal_show);vd($template);vde($admin_current_view_base_layout);
+// 		vde($layout[ $admin_current_view_base_layout ]);
+		
+		
+		// #NOT# 此处有个问题，不缓存效率底，缓存无法使用自定义布局（后面再解决）
+		// 能否区分对待，使用不同的缓存？
+		$config['tpl_cache'] = false;
+		
+		
+		$_view_vars = array_replace_recursive($builder->_view_vars,$CI->_view_vars);
+		return $CI	->assign_whale([
+							'_admin_base_layout' => $layout[ $admin_current_view_base_layout ],
+							'_admin_view_public' => $layout['admin_view_public'],
+							'userinfo'			 => session('user_auth'),
+							// 2017.12.25	新版布局变量（依据当前应用所处环境动态设置）
+							'_home_layout'		 => $_view_vars['_home_layout'],
+				
+							'custom_view'		=> $_view_vars['custom_view'],
+							'modal_show'		=> $modal_show,
+							'modal_jump_type'	=> request()->param('modal_jump_type',''),
+							//'__MENU__'			=> ['main'=>[],'child'=>[]],
+
+							'crumbsArr'			=> $_view_vars['crumbsArr'],
+							'__MENU__'			=> $_view_vars['__MENU__'],
+				
+							'userinfo'			=> ['head_pic'=>'','username'=>''],
+							'_view_vars'		=> $_view_vars,
+				
+					])
+					->assign_whale($_view_vars['assign_data'])
+					->fetch_whale($template, $vars, $config);
+	};
+	
+	//$builder->fetch();exit();
+	
 	return $builder;
 }
 
@@ -825,7 +879,7 @@ function ret_message($code=0, $msg = '', $url = null, $data = '', $wait = 3){
  * @return integer 0-未登录，大于0-当前登录用户ID
  */
 function is_login(){
-	if( IS_CLI )return 0;
+	if( PHP_SAPI=='cli' )return 0;
 	$user = session('user_auth');
 	if (empty($user)) {
 		return 0;
@@ -840,7 +894,7 @@ function is_login(){
  */
 function is_administrator($uid = null){
 	$uid = is_null($uid) ? is_login() : $uid;
-	return $uid && ( in_array(intval($uid), C('user_administrator')) );
+	return $uid && ( in_array(intval($uid), config('user_administrator',[1])) );
 }
 
 
@@ -1101,7 +1155,11 @@ function execute_action($rules = false, $action_id = null, $user_id = null){
 	if(!$rules || empty($action_id) || empty($user_id)){
 		return false;
 	}
-
+	
+	//+++++++++
+	return true;
+	
+	
 	$return = true;
 	foreach ($rules as $rule){
 
@@ -1633,18 +1691,20 @@ function get_pic_list_html($img_ids){
  * @param unknown $img_ids
  * @return string
  */
-function get_file_list_html($file_ids){
-	$file_ids 	= explode(',', $file_ids);
-	$file_list 	= model('File')->getList(['id'=>['in',$file_ids]]);
-
+function get_file_list_html($file_ids=0){
+	
 	$html = '';
-	foreach ($file_list as $vo){
-		if( $vo ){
-			$html .= 	'<div class="file-item-upload" data-id="'.$vo['id'].'">'.
-					'<i class="fa fa-file-o"></i> '.$vo['name'].
-					'<span>'.$vo['friendly_size'].'</span>'.
-					'<a class="del-file-item" href="javascript:;"><i class="fa fa-minus-circle"></i></a>'.
-					'</div>';
+	if( !empty($file_ids) ){
+		$file_ids 	= explode(',', $file_ids);
+		$file_list 	= model('File')->getList(['id'=>['in',$file_ids]]);
+		foreach ($file_list as $vo){
+			if( $vo ){
+				$html .= 	'<div class="file-item-upload" data-id="'.$vo['id'].'">'.
+							'<i class="fa fa-file-o"></i> '.$vo['name'].
+							'<span>'.$vo['friendly_size'].'</span>'.
+							'<a class="del-file-item" href="javascript:;"><i class="fa fa-minus-circle"></i></a>'.
+							'</div>';
+			}
 		}
 	}
 	return $html;
